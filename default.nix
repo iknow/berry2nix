@@ -3,56 +3,99 @@
 let
   yarn = pkgs.yarn;
 
-  mkBerryCache = { name, yarn, packageJSON, yarnLock, yarnPath, yarnRcYml, hash }:
+  setupYarn = { yarnPath, project ? null }:
     let
       yarnReleasePath = ".yarn/releases/${builtins.baseNameOf yarnPath}";
     in
-    pkgs.runCommand "${name}-yarn-cache" {
-      buildInputs = [ yarn ];
-      outputHash = hash;
-      outputHashAlgo = "sha256";
-      outputHashMode = "recursive";
-    } ''
-      export HOME=$(pwd)
+    ''
+      export SKIP_BERRY_NIX=true
       export YARN_ENABLE_TELEMETRY=false
+      export YARN_ENABLE_NETWORK=false
       export YARN_ENABLE_COLORS=false
 
-      mkdir -p work
-      cd work
+      ${if project == null then "" else ''
+      cp "${project.packageJSON}" package.json
+      cp "${project.yarnLock}" yarn.lock
+      ''}
 
-      cp ${packageJSON} package.json
-      cp ${yarnLock} yarn.lock
-      cp --no-preserve=mode ${builtins.path { path = yarnRcYml; name = "yarnrc.yml"; }} .yarnrc.yml
+      cp ${./plugin-nix.js} plugin-nix.js
 
-      mkdir -p .yarn/releases
-      cp -r ${yarnPath} ${yarnReleasePath}
-      yarn install --immutable
+      mkdir .yarn
+      mkdir .yarn/releases
+      cp ${yarnPath} ${yarnReleasePath}
+      ${if (project.yarnPlugins or null) == null then "" else ''
+      cp --no-preserve=mode -r ${project.yarnPlugins} .yarn/plugins
+      ''}
 
-      mv "$HOME/.yarn/berry" $out
+      ${if project == null then ''
+        cat > .yarnrc.yml <<EOF
+        yarnPath: ${yarnReleasePath}
+        plugins: [ plugin-nix.js ]
+        EOF
+      '' else ''
+        cp --no-preserve=mode ${builtins.path { path = project.yarnRcYml; name = "yarnrc.yml"; }} .yarnrc.yml
+        yarn plugin import ./plugin-nix.js
+      ''}
     '';
 
-  mkBerryModules = { name, yarn, packageJSON, yarnLock, yarnRcYml, yarnPath, ... }@args:
+  mkBerryNix = { name, yarn, yarnPath, project }:
+    pkgs.runCommand "${name}-berry.nix" {
+      buildInputs = [ yarn ];
+    } ''
+      ${setupYarn { inherit yarnPath project; }}
+      export YARN_GLOBAL_FOLDER="tmp"
+
+      yarn makeBerryNix
+      cp berry.nix $out
+    '';
+
+  mkBerryCache = { name, yarn, yarnPath, project, berryNix }:
     let
-      cache = mkBerryCache args;
-      yarnReleasePath = ".yarn/releases/${builtins.baseNameOf yarnPath}";
+      packages = import berryNix;
+      fetch = opts: pkgs.runCommand opts.name {
+        buildInputs = [ yarn ];
+        outputHash = opts.source.sha512;
+        outputHashAlgo = "sha512";
+      } ''
+        ${setupYarn { inherit yarnPath; }}
+        yarn tgzToZip \
+          "${builtins.fetchurl opts.source.url}" \
+          "$out" \
+          "${opts.convert.compressionLevel}" \
+          "${opts.convert.prefixPath}"
+      '';
+      entries = builtins.map (p: { name = "cache/${p.name}"; path = fetch p; }) packages;
+    in
+    pkgs.runCommand "${name}-berry-cache" {
+      buildInputs = [ yarn ];
+    } ''
+      mkdir -p $out/cache
+      ${pkgs.lib.concatMapStrings (p: ''
+        ln -s "${fetch p}" "$out/cache/${p.name}"
+      '') packages}
+
+      ${setupYarn { inherit yarnPath project; }}
+      export YARN_GLOBAL_FOLDER="$out"
+
+      # we do an install to fill the global cache with patch zips
+      yarn install --immutable --mode skip-build | grep -v YN0013
+    '';
+
+  mkBerryModules = { name, yarn, yarnPath, project }@args:
+    let
+      cache = mkBerryCache (args // {
+        berryNix = args.berryNix or (mkBerryNix args);
+      });
     in
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ yarn ];
     } ''
-      export HOME=$(pwd)
-      export YARN_ENABLE_TELEMETRY=false
-      export YARN_ENABLE_COLORS=false
-      export YARN_NODE_LINKER=node-modules
+      ${setupYarn { inherit yarnPath project; }}
+      export YARN_NODE_LINKER="node-modules"
       export YARN_GLOBAL_FOLDER="${cache}"
 
-      cp ${packageJSON} package.json
-      cp ${yarnLock} yarn.lock
-      cp --no-preserve=mode ${builtins.path { path = yarnRcYml; name = "yarnrc.yml"; }} .yarnrc.yml
-
-      mkdir -p .yarn/releases
-      cp -r ${yarnPath} ${yarnReleasePath}
-
-      yarn install
+      # YN0013 is "will fetch"
+      yarn install --immutable | grep -v YN0013
       mv node_modules $out
     '';
 in
@@ -60,9 +103,10 @@ in
 mkBerryModules {
   name = "typescript";
   inherit (pkgs) yarn;
-  packageJSON = ./package.json;
-  yarnLock = ./yarn.lock;
-  yarnRcYml = ./.yarnrc.yml;
   yarnPath = ./.yarn/releases/yarn-3.1.0.cjs;
-  hash = "06v3yk749dc7g4msjkiy8bkcsbjccpd222s4chypz6fcccs4r4zr";
+  project = {
+    packageJSON = ./package.json;
+    yarnLock = ./yarn.lock;
+    yarnRcYml = ./.yarnrc.yml;
+  };
 }
