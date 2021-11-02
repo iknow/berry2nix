@@ -1,0 +1,6 @@
+{
+  "packageManager": "yarn@3.1.0",
+  "dependencies": {
+    "typescript": "^4.4.4"
+  }
+}
