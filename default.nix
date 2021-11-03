@@ -13,7 +13,7 @@ let
       export YARN_ENABLE_NETWORK=false
       export YARN_ENABLE_COLORS=false
 
-      ${if project == null then "" else ''
+      ${pkgs.lib.optionalString (project != null) ''
       cp "${project.packageJSON}" package.json
       cp "${project.yarnLock}" yarn.lock
       ''}
