@@ -1,12 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  yarn = pkgs.yarn;
-
-  setupYarn = { yarnPath, project ? null }:
-    let
-      yarnReleasePath = ".yarn/releases/${builtins.baseNameOf yarnPath}";
-    in
+  setupYarn = { nodejs, yarnPath, project ? null }:
     ''
       export SKIP_BERRY_NIX=true
       export YARN_ENABLE_TELEMETRY=false
@@ -20,44 +15,42 @@ let
 
       cp ${./plugin-nix.js} plugin-nix.js
 
+      function yarn {
+        "${nodejs}/bin/node" "${yarnPath}" "$@"
+      }
+
       mkdir .yarn
-      mkdir .yarn/releases
-      cp ${yarnPath} ${yarnReleasePath}
       ${if (project.yarnPlugins or null) == null then "" else ''
       cp --no-preserve=mode -r ${project.yarnPlugins} .yarn/plugins
       ''}
 
       ${if project == null then ''
         cat > .yarnrc.yml <<EOF
-        yarnPath: ${yarnReleasePath}
         plugins: [ plugin-nix.js ]
         EOF
       '' else ''
-        cp --no-preserve=mode ${builtins.path { path = project.yarnRcYml; name = "yarnrc.yml"; }} .yarnrc.yml
+        grep -v "yarnPath:" ${builtins.path { path = project.yarnRcYml; name = "yarnrc.yml"; }} > .yarnrc.yml
         yarn plugin import ./plugin-nix.js > /dev/null
       ''}
     '';
 
-  mkBerryNix = { name, yarn, yarnPath, project }:
-    pkgs.runCommand "${name}-berry.nix" {
-      buildInputs = [ yarn ];
-    } ''
-      ${setupYarn { inherit yarnPath project; }}
+  mkBerryNix = { name, nodejs, yarnPath, project }:
+    pkgs.runCommand "${name}-berry.nix" {} ''
+      ${setupYarn { inherit nodejs yarnPath project; }}
       export YARN_GLOBAL_FOLDER="tmp"
 
       yarn makeBerryNix
       cp berry.nix $out
     '';
 
-  mkBerryCache = { name, yarn, yarnPath, project, berryNix }:
+  mkBerryCache = { name, nodejs, yarnPath, project, berryNix }:
     let
       packages = import berryNix;
       fetchUrlPackage = opts: pkgs.runCommand opts.name {
-        buildInputs = [ yarn ];
         outputHash = opts.source.sha512;
         outputHashAlgo = "sha512";
       } ''
-        ${setupYarn { inherit yarnPath; }}
+        ${setupYarn { inherit nodejs yarnPath; }}
 
         yarn tgzToZip \
           "${builtins.fetchurl opts.source.url}" \
@@ -69,8 +62,6 @@ let
       urlPackages = builtins.filter (pkg: pkg.source.type == "url") packages;
       patchPackages = builtins.filter (pkg: pkg.source.type == "patch") packages;
       fetchPatchPackage = opts: pkgs.runCommand opts.name ({
-        buildInputs = [ yarn ];
-
         source = fetchUrlPackage (pkgs.lib.findFirst
           (pkg: pkg.name == opts.source.source)
           (throw "No source package found for ${opts.name}")
@@ -82,7 +73,7 @@ let
         outputHash = opts.source.sha512;
         outputHashAlgo = "sha512";
       }) ''
-        ${setupYarn { inherit yarnPath project; }}
+        ${setupYarn { inherit nodejs yarnPath project; }}
 
         # setup writable cache
         mkdir -p tmp/cache
@@ -105,17 +96,16 @@ let
       '') patchPackages}
     '';
 
-  mkBerryModules = { name, yarn, yarnPath, project }@args:
+  mkBerryModules = { name, nodejs, yarnPath, project }@args:
     let
       cache = mkBerryCache (args // {
         berryNix = args.berryNix or (mkBerryNix args);
       });
     in
     pkgs.runCommand "${name}-node-modules" {
-      buildInputs = [ yarn ];
       passthru = { inherit cache; };
     } ''
-      ${setupYarn { inherit yarnPath project; }}
+      ${setupYarn { inherit nodejs yarnPath project; }}
       export YARN_NODE_LINKER="node-modules"
       export YARN_GLOBAL_FOLDER="${cache}"
 
@@ -127,7 +117,7 @@ in
 
 mkBerryModules {
   name = "typescript";
-  inherit (pkgs) yarn;
+  inherit (pkgs) nodejs;
   yarnPath = ./.yarn/releases/yarn-3.1.0.cjs;
   project = {
     packageJSON = ./package.json;
