@@ -43,8 +43,9 @@ let
       cp berry.nix $out
     '';
 
-  mkBerryCache = { name, nodejs, yarnPath, project, berryNix }:
+  mkBerryCache = { name, nodejs, yarnPath, project }@args:
     let
+      berryNix = args.berryNix or (mkBerryNix args);
       packages = import berryNix;
       fetchUrlPackage = opts: pkgs.runCommand opts.name {
         outputHash = opts.source.sha512;
@@ -98,9 +99,7 @@ let
 
   mkBerryModules = { name, nodejs, yarnPath, project }@args:
     let
-      cache = mkBerryCache (args // {
-        berryNix = args.berryNix or (mkBerryNix args);
-      });
+      cache = mkBerryCache args;
     in
     pkgs.runCommand "${name}-node-modules" {
       passthru = { inherit cache; };
