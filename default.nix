@@ -34,7 +34,7 @@ let
         EOF
       '' else ''
         cp --no-preserve=mode ${builtins.path { path = project.yarnRcYml; name = "yarnrc.yml"; }} .yarnrc.yml
-        yarn plugin import ./plugin-nix.js
+        yarn plugin import ./plugin-nix.js > /dev/null
       ''}
     '';
 
@@ -52,34 +52,61 @@ let
   mkBerryCache = { name, yarn, yarnPath, project, berryNix }:
     let
       packages = import berryNix;
-      fetch = opts: pkgs.runCommand opts.name {
+      fetchUrlPackage = opts: pkgs.runCommand opts.name {
         buildInputs = [ yarn ];
         outputHash = opts.source.sha512;
         outputHashAlgo = "sha512";
       } ''
         ${setupYarn { inherit yarnPath; }}
+
         yarn tgzToZip \
           "${builtins.fetchurl opts.source.url}" \
           "$out" \
-          "${opts.convert.compressionLevel}" \
+          "${builtins.toString opts.convert.compressionLevel}" \
           "${opts.convert.prefixPath}"
       '';
-      entries = builtins.map (p: { name = "cache/${p.name}"; path = fetch p; }) packages;
+
+      urlPackages = builtins.filter (pkg: pkg.source.type == "url") packages;
+      urlPackageCache =
+        pkgs.runCommand "${name}-berry-cache-url" {} ''
+          mkdir -p $out/cache
+          ${pkgs.lib.concatMapStrings (p: ''
+            ln -s "${fetchUrlPackage p}" "$out/cache/${p.name}"
+          '') urlPackages}
+        '';
+
+      patchPackages = builtins.filter (pkg: pkg.source.type == "patch") packages;
+      fetchPatchPackage = opts: pkgs.runCommand opts.name {
+        buildInputs = [ yarn ];
+        outputHash = opts.source.sha512;
+        outputHashAlgo = "sha512";
+
+        locatorJson = builtins.toJSON opts.source.locator;
+        passAsFile = [ "locatorJson" ];
+      } ''
+        ${setupYarn { inherit yarnPath project; }}
+
+        # setup writable cache
+        mkdir tmp
+        cp --no-preserve=mode -r "${urlPackageCache}/cache" tmp/cache
+        export YARN_GLOBAL_FOLDER=tmp
+
+        yarn fetchPatch < "$locatorJsonPath"
+        mv "tmp/cache/${opts.name}" "$out"
+      '';
+      patchPackageCache =
+        pkgs.runCommand "${name}-berry-cache-patch" {} ''
+          mkdir -p $out/cache
+          ${pkgs.lib.concatMapStrings (p: ''
+            ln -s "${fetchPatchPackage p}" "$out/cache/${p.name}"
+          '') patchPackages}
+        '';
     in
-    pkgs.runCommand "${name}-berry-cache" {
-      buildInputs = [ yarn ];
-    } ''
-      mkdir -p $out/cache
-      ${pkgs.lib.concatMapStrings (p: ''
-        ln -s "${fetch p}" "$out/cache/${p.name}"
-      '') packages}
-
-      ${setupYarn { inherit yarnPath project; }}
-      export YARN_GLOBAL_FOLDER="$out"
-
-      # we do an install to fill the global cache with patch zips
-      yarn install --immutable --mode skip-build | grep -v YN0013
-    '';
+    pkgs.symlinkJoin {
+      name = "${name}-berry-cache";
+      paths = [ urlPackageCache patchPackageCache ];
+      passthru = { inherit berryNix; };
+    };
 
   mkBerryModules = { name, yarn, yarnPath, project }@args:
     let
@@ -89,6 +116,7 @@ let
     in
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ yarn ];
+      passthru = { inherit cache; };
     } ''
       ${setupYarn { inherit yarnPath project; }}
       export YARN_NODE_LINKER="node-modules"

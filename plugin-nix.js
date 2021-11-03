@@ -6,8 +6,9 @@ module.exports = {
     const fs = require('fs');
 
     const { Command, Option } = require(`clipanion`);
-    const { structUtils, tgzUtils, Cache, Configuration, Project } = require(`@yarnpkg/core`);
+    const { structUtils, tgzUtils, Cache, Configuration, Project, ThrowReport } = require(`@yarnpkg/core`);
     const { npmConfigUtils } = require(`@yarnpkg/plugin-npm`);
+    const { patchUtils } = require(`@yarnpkg/plugin-patch`);
 
     const writePromise = util.promisify(fs.write);
 
@@ -27,6 +28,8 @@ module.exports = {
       for (const [key, value] of Object.entries(data)) {
         if (value === undefined) {
           continue;
+        } else if (value === null) {
+          result.push(`${padding}${key} = ${JSON.stringify(value)};`);
         } else if (Array.isArray(value)) {
           result.push(`${padding}${key} = ${JSON.stringify(value)};`);
         } else if (typeof value === 'object') {
@@ -60,10 +63,10 @@ module.exports = {
       const packages = [];
       for (const pkg of project.storedPackages.values()) {
         const { protocol } = structUtils.parseRange(pkg.reference);
+        const checksum = project.storedChecksums.get(pkg.locatorHash);
         if (protocol === 'npm:') {
           const registry = npmConfigUtils.getScopeRegistry(pkg.scope, { configuration: project.configuration });
           const packageUrl = `${registry}${NpmSemverFetcher.getLocatorUrl(pkg)}`;
-          const checksum = project.storedChecksums.get(pkg.locatorHash);
           const { cacheKey, hash } = splitChecksum(checksum);
           packages.push({
             name: path.basename(cache.getLocatorMirrorPath(pkg)),
@@ -74,6 +77,24 @@ module.exports = {
             source: {
               type: 'url',
               url: packageUrl,
+              sha512: hash,
+            }
+          });
+        } else if (protocol === 'patch:') {
+          const { cacheKey, hash } = splitChecksum(checksum);
+          packages.push({
+            name: path.basename(cache.getLocatorMirrorPath(pkg)),
+            // no convert options needed as we're picking it up from the
+            // project configuration directly
+            source: {
+              type: 'patch',
+              locator: {
+                name: pkg.name,
+                scope: pkg.scope,
+                identHash: pkg.identHash,
+                locatorHash: pkg.locatorHash,
+                reference: pkg.reference,
+              },
               sha512: hash,
             }
           });
@@ -103,9 +124,12 @@ module.exports = {
       prefixPath = Option.String();
 
       async execute() {
+        const compressionLevel = this.compressionLevel === 'mixed'
+          ? 'mixed'
+          : parseInt(this.compressionLevel);
         const buffer = await util.promisify(fs.readFile)(this.source);
         const zip = await tgzUtils.convertToZip(buffer, {
-          compressionLevel: this.compressionLevel,
+          compressionLevel,
           prefixPath: this.prefixPath,
           stripComponents: 1,
         });
@@ -115,8 +139,31 @@ module.exports = {
       }
     }
 
+    class FetchPatch extends Command {
+      static paths = [['fetchPatch']];
+
+      async execute() {
+        const locator = await util.promisify(fs.readFile)(this.context.stdin.fd, 'utf-8');
+        const configuration = await Configuration.find(this.context.cwd, this.context.plugins);
+        const { project } = await Project.find(configuration, this.context.cwd);
+        const cache = await Cache.find(configuration);
+        await project.applyLightResolution();
+        const fetcher = configuration.makeFetcher();
+        await fetcher.fetch(JSON.parse(locator), {
+          checksums: project.storedChecksums,
+          project,
+          cache,
+          fetcher,
+          report: new ThrowReport(),
+          cacheOptions: {
+            mirrorWriteOnly: true,
+          }
+        });
+      }
+    }
+
     return {
-      commands: [ TgzToZip, MakeBerryNix ],
+      commands: [ TgzToZip, MakeBerryNix, FetchPatch ],
       hooks: {
         async afterAllInstalled(project, { cache }) {
           if (process.env.SKIP_BERRY_NIX !== undefined) {
