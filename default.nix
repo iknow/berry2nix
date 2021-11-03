@@ -111,7 +111,8 @@ let
 
       # YN0013 is "will fetch"
       yarn install --immutable | grep -v YN0013
-      mv node_modules $out
+      mkdir $out
+      mv node_modules $out/node_modules
     '';
 in
 
