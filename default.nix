@@ -76,14 +76,15 @@ let
         '';
 
       patchPackages = builtins.filter (pkg: pkg.source.type == "patch") packages;
-      fetchPatchPackage = opts: pkgs.runCommand opts.name {
+      fetchPatchPackage = opts: pkgs.runCommand opts.name ({
         buildInputs = [ yarn ];
-        outputHash = opts.source.sha512;
-        outputHashAlgo = "sha512";
 
         locatorJson = builtins.toJSON opts.source.locator;
         passAsFile = [ "locatorJson" ];
-      } ''
+      } // pkgs.lib.optionalAttrs (opts.source.sha512 != null) {
+        outputHash = opts.source.sha512;
+        outputHashAlgo = "sha512";
+      }) ''
         ${setupYarn { inherit yarnPath project; }}
 
         # setup writable cache

@@ -13,6 +13,9 @@ module.exports = {
     const writePromise = util.promisify(fs.write);
 
     function splitChecksum(checksum) {
+      if (checksum === undefined) {
+        return { cacheKey: null, hash: null };
+      }
       const cacheKeyIndex = checksum.indexOf('/');
       if (cacheKeyIndex < 0) {
         throw new Error('Invalid checksum');
@@ -63,13 +66,14 @@ module.exports = {
       const packages = [];
       for (const pkg of project.storedPackages.values()) {
         const { protocol } = structUtils.parseRange(pkg.reference);
+        const name = path.basename(cache.getLocatorMirrorPath(pkg));
         const checksum = project.storedChecksums.get(pkg.locatorHash);
         if (protocol === 'npm:') {
           const registry = npmConfigUtils.getScopeRegistry(pkg.scope, { configuration: project.configuration });
           const packageUrl = `${registry}${NpmSemverFetcher.getLocatorUrl(pkg)}`;
-          const { cacheKey, hash } = splitChecksum(checksum);
+          const { hash } = splitChecksum(checksum);
           packages.push({
-            name: path.basename(cache.getLocatorMirrorPath(pkg)),
+            name,
             convert: {
               compressionLevel: project.configuration.get('compressionLevel'),
               prefixPath: structUtils.getIdentVendorPath(pkg),
@@ -81,9 +85,9 @@ module.exports = {
             }
           });
         } else if (protocol === 'patch:') {
-          const { cacheKey, hash } = splitChecksum(checksum);
+          const { hash } = splitChecksum(checksum);
           packages.push({
-            name: path.basename(cache.getLocatorMirrorPath(pkg)),
+            name,
             // no convert options needed as we're picking it up from the
             // project configuration directly
             source: {
