@@ -62,7 +62,9 @@ module.exports = {
     }
 
     async function collectPackages(project, cache) {
-      const NpmSemverFetcher = project.configuration.plugins.get('@yarnpkg/plugin-npm').fetchers[1];
+      const NpmSemverFetcher = project.configuration.plugins.get('@yarnpkg/plugin-npm').fetchers.find(f => {
+        return typeof f.getLocatorUrl === 'function';
+      });
       const packages = [];
       for (const pkg of project.storedPackages.values()) {
         const { protocol } = structUtils.parseRange(pkg.reference);
