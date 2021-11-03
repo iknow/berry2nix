@@ -86,12 +86,15 @@ module.exports = {
           });
         } else if (protocol === 'patch:') {
           const { hash } = splitChecksum(checksum);
+          const { sourceLocator } = patchUtils.parseLocator(pkg);
+          const sourceName = path.basename(cache.getLocatorMirrorPath(sourceLocator));
           packages.push({
             name,
             // no convert options needed as we're picking it up from the
             // project configuration directly
             source: {
               type: 'patch',
+              source: sourceName,
               locator: {
                 name: pkg.name,
                 scope: pkg.scope,

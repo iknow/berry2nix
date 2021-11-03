@@ -67,18 +67,15 @@ let
       '';
 
       urlPackages = builtins.filter (pkg: pkg.source.type == "url") packages;
-      urlPackageCache =
-        pkgs.runCommand "${name}-berry-cache-url" {} ''
-          mkdir -p $out/cache
-          ${pkgs.lib.concatMapStrings (p: ''
-            ln -s "${fetchUrlPackage p}" "$out/cache/${p.name}"
-          '') urlPackages}
-        '';
-
       patchPackages = builtins.filter (pkg: pkg.source.type == "patch") packages;
       fetchPatchPackage = opts: pkgs.runCommand opts.name ({
         buildInputs = [ yarn ];
 
+        source = fetchUrlPackage (pkgs.lib.findFirst
+          (pkg: pkg.name == opts.source.source)
+          (throw "No source package found for ${opts.name}")
+          urlPackages
+        );
         locatorJson = builtins.toJSON opts.source.locator;
         passAsFile = [ "locatorJson" ];
       } // pkgs.lib.optionalAttrs (opts.source.sha512 != null) {
@@ -88,26 +85,25 @@ let
         ${setupYarn { inherit yarnPath project; }}
 
         # setup writable cache
-        mkdir tmp
-        cp --no-preserve=mode -r "${urlPackageCache}/cache" tmp/cache
+        mkdir -p tmp/cache
+        ln -s "$source" "tmp/cache/${opts.source.source}"
         export YARN_GLOBAL_FOLDER=tmp
 
         yarn fetchPatch < "$locatorJsonPath"
         mv "tmp/cache/${opts.name}" "$out"
       '';
-      patchPackageCache =
-        pkgs.runCommand "${name}-berry-cache-patch" {} ''
-          mkdir -p $out/cache
-          ${pkgs.lib.concatMapStrings (p: ''
-            ln -s "${fetchPatchPackage p}" "$out/cache/${p.name}"
-          '') patchPackages}
-        '';
     in
-    pkgs.symlinkJoin {
-      name = "${name}-berry-cache";
-      paths = [ urlPackageCache patchPackageCache ];
+    pkgs.runCommand "${name}-berry-cache" {
       passthru = { inherit berryNix; };
-    };
+    } ''
+      mkdir -p $out/cache
+      ${pkgs.lib.concatMapStrings (p: ''
+        ln -s "${fetchUrlPackage p}" "$out/cache/${p.name}"
+      '') urlPackages}
+      ${pkgs.lib.concatMapStrings (p: ''
+        ln -s "${fetchPatchPackage p}" "$out/cache/${p.name}"
+      '') patchPackages}
+    '';
 
   mkBerryModules = { name, yarn, yarnPath, project }@args:
     let
