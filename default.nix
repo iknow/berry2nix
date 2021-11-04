@@ -20,7 +20,7 @@ let
       }
 
       mkdir .yarn
-      ${if (project.yarnPlugins or null) == null then "" else ''
+      ${pkgs.lib.optionalString ((project.yarnPlugins or null) != null) ''
       cp --no-preserve=mode -r ${project.yarnPlugins} .yarn/plugins
       ''}
 
