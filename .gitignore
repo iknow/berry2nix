@@ -1,0 +1,6 @@
+node_modules
+**/.yarn/unplugged
+**/.yarn/install-state.gz
+**/.yarn/cache
+.pnp.cjs
+result
