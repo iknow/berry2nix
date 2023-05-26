@@ -1,0 +1,6 @@
+{
+  "name": "child1",
+  "dependencies": {
+    "typescript": "^4"
+  }
+}

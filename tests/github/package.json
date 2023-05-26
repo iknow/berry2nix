@@ -1,0 +1,8 @@
+{
+  "name": "github",
+  "dependencies": {
+    "node2nix": "svanderburg/node2nix#node2nix-1.11.0",
+    "yarn-plugin-nixify": "github:stephank/yarn-plugin-nixify",
+    "yarn2nix": "git+https://github.com/nix-community/yarn2nix.git"
+  }
+}

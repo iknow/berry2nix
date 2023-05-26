@@ -1,0 +1,9 @@
+{
+  "name": "root",
+  "dependencies": {
+    "typescript": "^3"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
