@@ -27,10 +27,28 @@ let
     chmod +x $out/bin/yarn
   '';
 
+  reformatPackageName = pname:
+    let
+      # regex adapted from `validate-npm-package-name`
+      # will produce 3 parts e.g.
+      # "@someorg/somepackage" -> [ "@someorg/" "someorg" "somepackage" ]
+      # "somepackage" -> [ null null "somepackage" ]
+      parts = builtins.tail (builtins.match "^(@([^/]+)/)?([^/]+)$" pname);
+      # if there is no organisation we need to filter out null values.
+      non-null = builtins.filter (x: x != null) parts;
+    in builtins.concatStringsSep "-" non-null;
+
   /* Get a list of workspaces
 
-     This returns a list of objects containing the path to the package.json in
-     "packageJSON" and the relative path to the package in "path".
+     This returns a list of workspaces with the following attributes:
+
+     name is the nix friendly package name
+
+     packageName is the package name from the package.json
+
+     packageJSON is the path to the package.json file
+
+     path is the relative path to the workspace directory
   */
   getWorkspaces = src:
     let
@@ -65,10 +83,17 @@ let
 
       workspacePaths = lib.concatMap (expandGlob src) workspaceGlobs;
     in
-    builtins.map (path: {
-      inherit path;
-      packageJSON = src + ("/" + path + "/package.json");
-    }) workspacePaths;
+    builtins.map (path:
+      let
+        packageJSON = src + ("/" + path + "/package.json");
+        manifest = lib.importJSON packageJSON;
+      in
+      {
+        name = reformatPackageName manifest.name;
+        packageName = manifest.name;
+        inherit path packageJSON;
+      }
+    ) workspacePaths;
 
   /* Discover the yarnPath in src
 
@@ -342,7 +367,10 @@ let
     assert lib.assertMsg (project.workspaces == []) "mkBerryModules cannot be used with workspaces";
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ project.yarn ];
-      passthru = { inherit cache; };
+      passthru = {
+        inherit cache;
+        inherit (project) yarn;
+      };
     } ''
       ${setupProject project}
       export YARN_NODE_LINKER="node-modules"
@@ -357,13 +385,41 @@ let
   /* Setup a yarn workspace
 
      Essentially does a yarn install in the src folder.
+
+     packages also contains an attrset containing focused installations for
+     each workspace. This requires workspace-tools to have been installed.
+
+     path is the path to the focused package relative to the package root.
   */
-  mkBerryWorkspace = { name, src, ... }@args:
+  mkBerryWorkspace = { name, src, focus ? null, ... }@args:
     let
       project = getProject args;
       cache = mkBerryCache (args // {
         inherit project;
       });
+
+      installCommand = if focus == null
+        then "yarn install --immutable"
+        else "yarn workspaces focus ${focus.packageName}";
+
+      packages =
+        builtins.listToAttrs (builtins.map (workspace: {
+          inherit (workspace) name;
+          value = mkBerryWorkspace (args // {
+            name = "${name}-${workspace.name}";
+            focus = workspace;
+          });
+        }) project.workspaces);
+
+      passthru = if focus == null
+        then {
+          path = ".";
+          packageName = (lib.importJSON project.packageJSON).name;
+          inherit packages;
+        }
+        else {
+          inherit (focus) path packageName;
+        };
     in
     stdenv.mkDerivation {
       inherit name src;
@@ -376,14 +432,14 @@ let
         export YARN_GLOBAL_FOLDER="${cache}"
 
         # YN0013 is "will fetch"
-        yarn install --immutable | sed /YN0013/d
+        ${installCommand} | sed /YN0013/d
       '';
 
       installPhase = ''
         cp -r . $out
       '';
 
-      passthru = {
+      passthru = passthru // {
         inherit cache;
         inherit (project) yarn;
       };
