@@ -3,4 +3,5 @@ node_modules
 **/.yarn/install-state.gz
 **/.yarn/cache
 .pnp.cjs
+.pnp.loader.mjs
 result

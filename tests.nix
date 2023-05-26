@@ -14,4 +14,10 @@ in
     name = "workspace";
     src = ./tests/workspace;
   };
+
+  production = berry2nix.mkBerryModules {
+    name = "production";
+    src = ./tests/production;
+    production = true;
+  };
 }

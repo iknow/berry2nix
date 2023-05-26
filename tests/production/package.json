@@ -1,0 +1,9 @@
+{
+  "name": "production",
+  "devDependencies": {
+    "eslint": "^8.41.0"
+  },
+  "dependencies": {
+    "is-string": "^1.0.7"
+  }
+}
