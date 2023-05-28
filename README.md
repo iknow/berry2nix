@@ -83,6 +83,33 @@ If all packages come from public registries, it's also possible to do fetching
 via yarn instead of nix by specifying `fetchWithYarn = true;`. The option can be
 specified for both of `mkBerryWorkspace` and `mkBerryModules`.
 
+#### Request has been blocked
+
+If yarn fails with "Request has been blocked by configuration settings", this
+means that a dependency:
+
+ * is not an npm, patch or git dependency
+ * does not have a checksum
+ * is an optional conditional dependency
+
+The only case we explicitly support is an optional conditional dependency, in
+this case, yarn hides the checksum to avoid the lockfile from changing depending
+on the system installing the package. To work around this, make the dependency
+explicit.
+
+For example, `esbuild` optionally depends on `@esbuild/linux-x64` and hence the
+`@esbuild/linux-x64` package will not have a checksum in the lockfile. To ensure
+yarn sets a checksum on it, put it in your `package.json` explicitly.
+
+```json
+{
+  "devDependencies": {
+    "@esbuild/linux-x64": "0.17.19",
+    "esbuild": "0.17.19"
+  }
+}
+```
+
 ### Yarn Path
 
 We assume that the project uses the standard layout with yarn committed under

@@ -23,4 +23,9 @@ rec {
     src = ./tests/production;
     production = true;
   };
+
+  esbuild = berry2nix.mkBerryModules {
+    name = "esbuild";
+    src = ./tests/esbuild;
+  };
 }
