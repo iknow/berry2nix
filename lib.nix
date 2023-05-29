@@ -94,16 +94,16 @@ let
 
       workspacePaths = lib.concatMap (expandGlob src) workspaceGlobs;
     in
-    builtins.map (path:
+    builtins.concatMap (path:
       let
         packageJSON = src + ("/" + path + "/package.json");
         manifest = lib.importJSON packageJSON;
       in
-      {
+      lib.optionals (builtins.pathExists packageJSON) [{
         name = reformatPackageName manifest.name;
         packageName = manifest.name;
         inherit path packageJSON;
-      }
+      }]
     ) workspacePaths;
 
   /* Discover the yarnPath in src
