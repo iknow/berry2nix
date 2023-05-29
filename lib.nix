@@ -5,13 +5,24 @@
 let
   inherit (pkgs) lib stdenv;
 
+  appendYarnPlugins = yarnPluginPaths: lib.optionalString (yarnPluginPaths != []) ''
+    if [ -n "$YARN_PLUGINS" ]; then
+      export YARN_PLUGINS="$YARN_PLUGINS;${builtins.concatStringsSep ";" yarnPluginPaths}"
+    else
+      export YARN_PLUGINS="${builtins.concatStringsSep ";" yarnPluginPaths}"
+    fi
+  '';
+
   /* Wrap a yarn release into a bin
 
      This also makes it ignore any yarn path currently set in the yarnrc.
   */
-  mkYarnBin = yarnPath: pkgs.runCommand "yarn" {
+  mkYarnBin = yarnPath: yarnPluginPaths: pkgs.runCommand "yarn" {
     script = ''
       #!${pkgs.runtimeShell}
+
+      ${appendYarnPlugins yarnPluginPaths}
+
       export YARN_IGNORE_PATH=true
       exec ${nodejs}/bin/node "${yarnPath}" "$@"
     '';
@@ -136,7 +147,7 @@ let
     yarnRcYml ? src + "/.yarnrc.yml",
     yarnPlugins ? src + "/.yarn/plugins",
     yarnPath ? getYarnPath src,
-    yarn ? lib.mapNullable mkYarnBin yarnPath,
+    yarn ? lib.mapNullable mkYarnBin yarnPath [],
     workspaces ? getWorkspaces src,
     ...
   }: {
@@ -173,6 +184,7 @@ let
     in
     ''
       ${yarnEnv}
+      ${appendYarnPlugins [ yarnPlugin ]}
 
       cp "${project.packageJSON}" package.json
       cp "${project.yarnLock}" yarn.lock
@@ -186,14 +198,7 @@ let
       # having a yarnPath sometimes interferes with building git dependencies
       # even if YARN_IGNORE_PATH is set
       yarn config unset yarnPath > /dev/null
-      yarn plugin import ${yarnPlugin} > /dev/null
     '';
-
-  setupBareProject = ''
-    ${yarnEnv}
-
-    echo "plugins: [ ${yarnPlugin} ]" > .yarnrc.yml
-  '';
 
   mkBerryNix = { name, project }:
     pkgs.runCommand "${name}-berry.nix" {
@@ -263,7 +268,8 @@ let
         locatorJson = builtins.toJSON opts.locator;
         passAsFile = [ "locatorJson" ];
       } ''
-        ${setupBareProject}
+        ${yarnEnv}
+        export YARN_PLUGINS="${yarnPlugin}"
 
         ${if opts.source.type == "git" then ''
           # copy the git directory so it's writable
