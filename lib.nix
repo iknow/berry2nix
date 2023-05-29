@@ -152,6 +152,7 @@ let
     export YARN_ENABLE_TELEMETRY=false
     export YARN_ENABLE_NETWORK=false
     export YARN_ENABLE_COLORS=false
+    export YARN_ENABLE_HYPERLINKS=false
   '';
 
   /* Copies the project into the build directory
