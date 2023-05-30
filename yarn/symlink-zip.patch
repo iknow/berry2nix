@@ -1,0 +1,13 @@
+diff --git a/packages/yarnpkg-fslib/sources/ZipOpenFS.ts b/packages/yarnpkg-fslib/sources/ZipOpenFS.ts
+index d9b16f1..f911c8b 100644
+--- a/packages/yarnpkg-fslib/sources/ZipOpenFS.ts
++++ b/packages/yarnpkg-fslib/sources/ZipOpenFS.ts
+@@ -1018,7 +1018,7 @@ export class ZipOpenFS extends BasePortableFakeFS {
+           continue;
+ 
+         try {
+-          if (!this.baseFs.lstatSync(filePath).isFile()) {
++          if (!this.baseFs.statSync(filePath).isFile()) {
+             this.notZip.add(filePath);
+             continue;
+           }

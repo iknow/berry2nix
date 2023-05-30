@@ -15,9 +15,19 @@ let
 
   /* Wrap a yarn release into a bin
 
-     This also makes it ignore any yarn path currently set in the yarnrc.
+     yarnPath is the path to a yarn release js file
+
+     yarnPluginPaths are any plugins that should be in the path
+
+     isPatchedForGlobalCache requires a patched yarn that allows the cache to
+     be a symlink farm. This avoids unnecessary copying of zips on install. A
+     patched yarn is available in yarn/yarn.nix
   */
-  mkYarnBin = yarnPath: yarnPluginPaths: pkgs.runCommand "yarn" {
+  mkYarnBin = {
+    yarnPath,
+    yarnPluginPaths ? [],
+    isPatchedForGlobalCache ? false
+  }: pkgs.runCommand "yarn" {
     script = ''
       #!${pkgs.runtimeShell}
 
@@ -30,7 +40,7 @@ let
     passAsFile = [ "script" ];
 
     passthru = {
-      inherit nodejs;
+      inherit nodejs isPatchedForGlobalCache;
     };
   } ''
     mkdir -p $out/bin
@@ -147,7 +157,7 @@ let
     yarnRcYml ? src + "/.yarnrc.yml",
     yarnPlugins ? src + "/.yarn/plugins",
     yarnPath ? getYarnPath src,
-    yarn ? lib.mapNullable mkYarnBin yarnPath [],
+    yarn ? lib.mapNullable mkYarnBin { inherit yarnPath; },
     workspaces ? getWorkspaces src,
     ...
   }: {
@@ -374,6 +384,9 @@ let
     assert lib.assertMsg (project.workspaces == []) "mkBerryModules cannot be used with workspaces";
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ project.yarn ];
+
+      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache);
+
       passthru = {
         inherit cache;
         inherit (project) yarn;
@@ -432,6 +445,8 @@ let
       inherit name src;
 
       buildInputs = [ project.yarn ];
+
+      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache);
 
       buildPhase = ''
         ${yarnEnv}
