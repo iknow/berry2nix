@@ -1,0 +1,82 @@
+diff --git a/packages/yarnpkg-core/sources/Configuration.ts b/packages/yarnpkg-core/sources/Configuration.ts
+index ede7f43..7a328df 100644
+--- a/packages/yarnpkg-core/sources/Configuration.ts
++++ b/packages/yarnpkg-core/sources/Configuration.ts
+@@ -1505,6 +1505,19 @@ export class Configuration {
+     return {os, cpu, libc};
+   }
+ 
++  getSupportedArchitecturePurity(): nodeUtils.ArchitectureSetPurity {
++    const supportedArchitectures = this.get(`supportedArchitectures`);
++    const os = supportedArchitectures.get(`os`) ?? [ `current` ];
++    const cpu = supportedArchitectures.get(`cpu`) ?? [ `current` ];
++    const libc = supportedArchitectures.get(`libc`) ?? [ `current` ];
++
++    return {
++      os: !os.includes(`current`),
++      cpu: !cpu.includes(`current`),
++      libc: !libc.includes(`current`),
++    };
++  }
++
+   async refreshPackageExtensions() {
+     this.packageExtensions = new Map();
+     const packageExtensions = this.packageExtensions;
+diff --git a/packages/yarnpkg-core/sources/Project.ts b/packages/yarnpkg-core/sources/Project.ts
+index 1cbfd6e..5623f4d 100644
+--- a/packages/yarnpkg-core/sources/Project.ts
++++ b/packages/yarnpkg-core/sources/Project.ts
+@@ -732,6 +732,7 @@ export class Project {
+     // the number of async tasks being listed in the report, although it's strange this doesn't occur on other systems.
+     const currentArchitecture = nodeUtils.getArchitectureSet();
+     const supportedArchitectures = this.configuration.getSupportedArchitectures();
++    const supportedArchitecturePurity = this.configuration.getSupportedArchitecturePurity();
+ 
+     await opts.report.startProgressPromise(Report.progressViaTitle(), async progress => {
+       const startPackageResolution = async (locator: Locator) => {
+@@ -918,6 +919,10 @@ export class Project {
+         }
+ 
+         disabledLocators.add(pkg.locatorHash);
++      } else {
++        if (structUtils.isPackageUnconditional(pkg, supportedArchitecturePurity)) {
++          continue;
++        }
+       }
+ 
+       conditionalLocators.add(pkg.locatorHash);
+diff --git a/packages/yarnpkg-core/sources/nodeUtils.ts b/packages/yarnpkg-core/sources/nodeUtils.ts
+index de34ca6..3513612 100644
+--- a/packages/yarnpkg-core/sources/nodeUtils.ts
++++ b/packages/yarnpkg-core/sources/nodeUtils.ts
+@@ -65,6 +65,12 @@ export type ArchitectureSet = {
+   libc: Array<string> | null;
+ };
+ 
++export type ArchitectureSetPurity = {
++  os: boolean;
++  cpu: boolean;
++  libc: boolean;
++};
++
+ let architecture: Architecture | undefined;
+ let architectureSet: ArchitectureSet | undefined;
+ 
+diff --git a/packages/yarnpkg-core/sources/structUtils.ts b/packages/yarnpkg-core/sources/structUtils.ts
+index 6f8cbfa..1f1e2ba 100644
+--- a/packages/yarnpkg-core/sources/structUtils.ts
++++ b/packages/yarnpkg-core/sources/structUtils.ts
+@@ -823,3 +823,13 @@ export function isPackageCompatible(pkg: Package, architectures: nodeUtils.Archi
+     return supported ? supported.includes(value) : true;
+   });
+ }
++
++export function isPackageUnconditional(pkg: Package, architecturePurity: nodeUtils.ArchitectureSetPurity) {
++  if (!pkg.conditions)
++    return true;
++
++  return conditionParser(pkg.conditions, specifier => {
++    const [, name] = specifier.match(conditionRegex)!;
++    return architecturePurity[name as keyof typeof architecturePurity];
++  });
++}

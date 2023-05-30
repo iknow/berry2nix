@@ -6,7 +6,16 @@
 
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system}; in
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+
+        berry2nix = pkgs.callPackage ./lib.nix {};
+
+        yarn-patched = berry2nix.mkYarnBin {
+          yarnPath = pkgs.callPackage yarn/yarn.nix {};
+          isPatchedForGlobalCache = true;
+        };
+      in
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
@@ -14,9 +23,15 @@
             yarn
           ];
         };
+        devShells.patched = pkgs.mkShell {
+          packages = [
+            pkgs.nodejs
+            yarn-patched
+          ];
+        };
 
         lib = rec {
-          berry2nix = pkgs.callPackage ./lib.nix {};
+          inherit berry2nix;
           default = berry2nix;
         };
       }

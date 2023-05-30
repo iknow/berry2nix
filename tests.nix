@@ -45,4 +45,10 @@ rec {
     name = "esbuild";
     src = ./tests/esbuild;
   };
+
+  esbuild-patched-yarn = berry2nix.mkBerryModules {
+    name = "esbuild";
+    src = ./tests/esbuild-patched;
+    yarn = yarn-patched;
+  };
 }

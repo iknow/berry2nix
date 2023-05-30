@@ -20,6 +20,7 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./symlink-zip.patch
+    ./architecture-purity.patch
   ];
 
   buildPhase = ''
