@@ -24,6 +24,7 @@ stdenv.mkDerivation rec {
   ];
 
   buildPhase = ''
+    patchShebangs --build scripts/run-yarn.js
     scripts/run-yarn.js build:cli
   '';
 
