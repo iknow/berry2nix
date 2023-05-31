@@ -26,9 +26,6 @@ rec {
     src = ./tests/workspace;
   };
 
-  workspace-child1 = workspace.packages.child1;
-  workspace-child2 = workspace.packages.child2;
-
   workspace-patched-yarn = berry2nix.mkBerryWorkspace {
     name = "workspace";
     src = ./tests/workspace;

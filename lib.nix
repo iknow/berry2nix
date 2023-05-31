@@ -406,40 +406,25 @@ let
 
      Essentially does a yarn install in the src folder.
 
-     packages also contains an attrset containing focused installations for
-     each workspace. This requires workspace-tools to have been installed.
-
-     path is the path to the focused package relative to the package root.
+     packages also contains an attrset containing metadata about workspace
+     subpackages. See also getWorkspaces
   */
-  mkBerryWorkspace = { name, src, focus ? null, ... }@args:
+  mkBerryWorkspace = {
+    name,
+    src,
+    buildPhase ? "yarn install --immutable",
+    ...
+  }@args:
     let
       project = getProject args;
       cache = mkBerryCache (args // {
         inherit project;
       });
 
-      installCommand = if focus == null
-        then "yarn install --immutable"
-        else "yarn workspaces focus ${focus.packageName}";
-
-      packages =
-        builtins.listToAttrs (builtins.map (workspace: {
-          inherit (workspace) name;
-          value = mkBerryWorkspace (args // {
-            name = "${name}-${workspace.name}";
-            focus = workspace;
-          });
-        }) project.workspaces);
-
-      passthru = if focus == null
-        then {
-          path = ".";
-          packageName = (lib.importJSON project.packageJSON).name;
-          inherit packages;
-        }
-        else {
-          inherit (focus) path packageName;
-        };
+      packages = builtins.listToAttrs (builtins.map (workspace: {
+        inherit (workspace) name;
+        value = workspace;
+      }) project.workspaces);
     in
     stdenv.mkDerivation {
       inherit name src;
@@ -453,16 +438,15 @@ let
         export YARN_NODE_LINKER="node-modules"
         export YARN_GLOBAL_FOLDER="${cache}"
 
-        # YN0013 is "will fetch"
-        ${installCommand} | sed /YN0013/d
+        ${buildPhase}
       '';
 
       installPhase = ''
         cp -r . $out
       '';
 
-      passthru = passthru // {
-        inherit cache;
+      passthru = {
+        inherit cache packages;
         inherit (project) yarn;
       };
     };

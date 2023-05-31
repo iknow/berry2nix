@@ -130,7 +130,3 @@ berry2nix.mkBerryWorkspace {
 When building a project with workspaces, information about the sub-packages is
 provided in the `packages` attrset. The name from the package.json is in
 `packageName` while the relative path to the sub-package is available in `path`.
-
-If `workspace-tools` is installed, it's also possible to build them as
-derivations with the workspace focused, however there is not much benefit to
-doing so now since the berry cache is always built with all packages.
