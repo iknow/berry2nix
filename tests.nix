@@ -2,10 +2,7 @@
 let
   berry2nix = pkgs.callPackage ./lib.nix {};
 
-  yarn-patched = berry2nix.mkYarnBin {
-    yarnPath = pkgs.callPackage yarn/yarn.nix {};
-    isPatchedForGlobalCache = true;
-  };
+  inherit (pkgs.callPackage ./yarn {}) yarn-patched;
 
   inherit (berry2nix) mkBerryModules;
 in

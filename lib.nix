@@ -1,52 +1,20 @@
-{ pkgs ? import <nixpkgs> {}
-, nodejs ? pkgs.nodejs
-}:
+{ pkgs ? import <nixpkgs> {} }:
 
 let
   inherit (pkgs) lib stdenv;
 
-  appendYarnPlugins = yarnPluginPaths: lib.optionalString (yarnPluginPaths != []) ''
-    if [ -n "$YARN_PLUGINS" ]; then
-      export YARN_PLUGINS="$YARN_PLUGINS;${builtins.concatStringsSep ";" yarnPluginPaths}"
-    else
-      export YARN_PLUGINS="${builtins.concatStringsSep ";" yarnPluginPaths}"
-    fi
-  '';
+  inherit (pkgs.callPackage ./yarn {}) yarn-bin;
 
   /* Wrap a yarn release into a bin
 
      yarnPath is the path to a yarn release js file
-
-     yarnPluginPaths are any plugins that should be in the path
-
-     isPatchedForGlobalCache requires a patched yarn that allows the cache to
-     be a symlink farm. This avoids unnecessary copying of zips on install. A
-     patched yarn is available in yarn/yarn.nix
   */
   mkYarnBin = {
-    yarnPath,
-    yarnPluginPaths ? [],
-    isPatchedForGlobalCache ? false
-  }: pkgs.runCommand "yarn" {
-    script = ''
-      #!${pkgs.runtimeShell}
-
-      ${appendYarnPlugins yarnPluginPaths}
-
-      export YARN_IGNORE_PATH=true
-      exec ${nodejs}/bin/node "${yarnPath}" "$@"
-    '';
-
-    passAsFile = [ "script" ];
-
-    passthru = {
-      inherit nodejs isPatchedForGlobalCache;
-    };
-  } ''
-    mkdir -p $out/bin
-    cp "$scriptPath" $out/bin/yarn
-    chmod +x $out/bin/yarn
-  '';
+    nodejs ? pkgs.nodejs,
+    yarnPath
+  }: yarn-bin.override {
+    inherit nodejs yarnPath;
+  };
 
   reformatPackageName = pname:
     let
@@ -194,7 +162,7 @@ let
     in
     ''
       ${yarnEnv}
-      ${appendYarnPlugins [ yarnPlugin ]}
+      export YARN_PLUGINS="${yarnPlugin}"
 
       cp "${project.packageJSON}" package.json
       cp "${project.yarnLock}" yarn.lock
@@ -385,7 +353,7 @@ let
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ project.yarn ];
 
-      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache);
+      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache or false);
 
       passthru = {
         inherit cache;
@@ -431,7 +399,7 @@ let
 
       buildInputs = [ project.yarn ];
 
-      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache);
+      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache or false);
 
       buildPhase = ''
         ${yarnEnv}
