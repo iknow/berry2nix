@@ -392,6 +392,7 @@ let
     name,
     src,
     buildPhase ? "yarn install --immutable",
+    installPhase ? "cp -r . $out",
     ...
   }@args:
     let
@@ -420,9 +421,7 @@ let
         ${buildPhase}
       '';
 
-      installPhase = ''
-        cp -r . $out
-      '';
+      inherit installPhase;
 
       passthru = {
         inherit cache packages;
