@@ -29,7 +29,7 @@ stdenv.mkDerivation {
     makeWrapper "${nodejs}/bin/node" "$out/bin/yarn" \
       --add-flags "$out/libexec/yarn.js" \
       --set YARN_IGNORE_PATH true \
-      --suffix YARN_PLUGINS : "${builtins.concatStringsSep ";" plugins}"
+      --suffix YARN_PLUGINS ";" "${builtins.concatStringsSep ";" plugins}"
   '';
 
   passthru = passthru // {
