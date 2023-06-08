@@ -95,7 +95,7 @@ means that a dependency:
 The only case we explicitly support is an optional conditional dependency, in
 this case, yarn hides the checksum to avoid the lockfile from changing depending
 on the system installing the package. To work around this, make the dependency
-explicit.
+explicit or [use the patched yarn](#yarn-patches).
 
 For example, `esbuild` optionally depends on `@esbuild/linux-x64` and hence the
 `@esbuild/linux-x64` package will not have a checksum in the lockfile. To ensure
@@ -130,3 +130,54 @@ berry2nix.mkBerryWorkspace {
 When building a project with workspaces, information about the sub-packages is
 provided in the `packages` attrset. The name from the package.json is in
 `packageName` while the relative path to the sub-package is available in `path`.
+
+## Yarn Patches
+
+A patched version of yarn is included as `yarn-patched`.
+
+```nix
+berry2nix-yarn = pkgs.callPackage (pkgs.fetchFromGitHub {
+  owner = "iknow";
+  repo = "berry2nix";
+  rev = "...";
+  sha256 = "...";
+} + "/yarn") {};
+
+berry2nix.mkBerryWorkspace {
+  name = "packagename";
+  src = ./.;
+  yarn = berry2nix-yarn.yarn-patched;
+}
+```
+
+The patched version avoids an additional copy of zips when installing packages
+in `mkBerryModules` and `mkBerryWorkspace`.
+
+### Optional Conditional Dependencies
+
+The patched version also works around the problem of optional conditional
+dependencies, but it *must* be used when doing the `yarn install` so it's
+recommended to use it as part of `nix-shell` instead of upstream yarn.
+
+Instead of having to explicitly define them in `package.json`, it's enough to
+set `supportedArchitectures` in `.yarnrc.yml` like so:
+
+```yaml
+supportedArchitectures:
+  os:
+    - linux
+    - darwin
+  cpu:
+    - x64
+    - arm64
+  libc:
+    - glibc
+```
+
+That will ensure that checksums are set for linux-x64, linux-arm64, darwin-x64
+and darwin-arm64 (with glibc as the libc).
+
+`current` must not be used as the checksums might change depending on the system
+doing the install. If it's set, then no checksums will be stored for conditonal
+packages. Instead, make sure to list all supported architectures in the
+configuration.
