@@ -3,18 +3,7 @@
 let
   inherit (pkgs) lib stdenv;
 
-  inherit (pkgs.callPackage ./yarn {}) yarn-bin;
-
-  /* Wrap a yarn release into a bin
-
-     yarnPath is the path to a yarn release js file
-  */
-  mkYarnBin = {
-    nodejs ? pkgs.nodejs,
-    yarnPath
-  }: yarn-bin.override {
-    inherit nodejs yarnPath;
-  };
+  inherit (pkgs.callPackage ./yarn {}) wrapYarnWith;
 
   reformatPackageName = pname:
     let
@@ -125,7 +114,7 @@ let
     yarnRcYml ? src + "/.yarnrc.yml",
     yarnPlugins ? src + "/.yarn/plugins",
     yarnPath ? getYarnPath src,
-    yarn ? lib.mapNullable mkYarnBin { inherit yarnPath; },
+    yarn ? lib.mapNullable (yarn-js: wrapYarnWith { inherit yarn-js; }) yarnPath,
     workspaces ? getWorkspaces src,
     ...
   }: {
@@ -430,5 +419,5 @@ let
     };
 in
 {
-  inherit mkBerryModules mkBerryWorkspace getWorkspaces mkYarnBin;
+  inherit mkBerryModules mkBerryWorkspace getWorkspaces wrapYarnWith;
 }
