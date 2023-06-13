@@ -42,36 +42,59 @@ function splitChecksum(checksum: string | undefined) {
   return { cacheKey, hash };
 }
 
-function serializeToNixAttrs(data: object, indentLevel = 0) {
+const ID_REGEX = /[a-zA-Z_][a-zA-Z0-9_'-]*/;
+
+function serializeNixId(key: string): string {
+  if (ID_REGEX.test(key)) {
+    return key;
+  } else {
+    return JSON.stringify(key);
+  }
+}
+
+function serializeToNix(value: unknown, indentLevel = 0): string {
+  const padding = ' '.repeat(indentLevel);
+  if (value === undefined) {
+    throw new Error('undefined cannot be represented');
+  } else if (value === null) {
+    return `${padding}${JSON.stringify(value)}`;
+  } else if (Array.isArray(value)) {
+    const members = value.map((member) => serializeToNix(member, indentLevel + 2));
+    return `${padding}[\n${members.join('\n')}\n${padding}]`;
+  } else if (typeof value === 'object') {
+    return `${padding}{\n${serializeToNixAttrs(value as Record<string, unknown>, indentLevel + 2)}\n${padding}}`;
+  } else {
+    return `${padding}${JSON.stringify(value)}`;
+  }
+}
+
+function serializeToNixAttrs(data: Record<string, unknown>, indentLevel = 0) {
   const result: string[] = [];
   const padding = ' '.repeat(indentLevel);
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined) {
       continue;
     } else if (value === null) {
-      result.push(`${padding}${key} = ${JSON.stringify(value)};`);
+      result.push(`${padding}${serializeNixId(key)} = ${serializeToNix(value)};`);
     } else if (Array.isArray(value)) {
-      result.push(`${padding}${key} = ${JSON.stringify(value)};`);
+      result.push(`${padding}${serializeNixId(key)} = [`);
+      for (const member of value) {
+        result.push(serializeToNix(member, indentLevel + 2));
+      }
+      result.push(`${padding}];`);
     } else if (typeof value === 'object') {
-      result.push(`${padding}${key} = {`);
-      result.push(serializeToNixAttrs(value, indentLevel + 2));
+      result.push(`${padding}${serializeNixId(key)} = {`);
+      result.push(serializeToNixAttrs(value as Record<string, unknown>, indentLevel + 2));
       result.push(`${padding}};`);
     } else {
-      result.push(`${padding}${key} = ${JSON.stringify(value)};`);
+      result.push(`${padding}${serializeNixId(key)} = ${serializeToNix(value)};`);
     }
   }
   return result.join('\n');
 }
 
 async function writeBerryNix(packages: object[]) {
-  const file = await fs.open('berry.nix', 'w');
-  await fs.appendFile(file, "[\n");
-  for (const pkg of packages) {
-    await fs.appendFile(file, "  {\n");
-    await fs.appendFile(file, serializeToNixAttrs(pkg, 4));
-    await fs.appendFile(file, "\n  }\n");
-  }
-  await fs.appendFile(file, "]\n");
+  await fs.writeFile('berry.nix', `${serializeToNix(packages)}\n`);
 }
 
 interface UrlSource {
