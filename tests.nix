@@ -3,10 +3,8 @@ let
   berry2nix = pkgs.callPackage ./lib.nix {};
 
   inherit (pkgs.callPackage ./yarn {}) yarn-patched;
-
-  inherit (berry2nix) mkBerryModules;
 in
-rec {
+{
   github = berry2nix.mkBerryModules {
     name = "github";
     src = ./tests/github;
