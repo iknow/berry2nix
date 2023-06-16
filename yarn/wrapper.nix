@@ -2,19 +2,18 @@
 , lib
 , makeWrapper
 , nodejs
-, runtimeShell
-, yarnPath ? ../.yarn/releases/yarn-3.5.1.cjs
+, yarn-js ? ../.yarn/releases/yarn-3.5.1.cjs
 , plugins ? []
 , passthru ? {}
 }:
 
 stdenv.mkDerivation {
-  pname = "yarn";
-  version = if lib.isDerivation yarnPath then yarnPath.version else "";
+  pname = "yarn-wrapper";
+  version = if lib.isDerivation yarn-js then yarn-js.version else "";
 
   buildInputs = [ makeWrapper nodejs ];
 
-  src = yarnPath;
+  src = yarn-js;
 
   dontUnpack = true;
   dontBuild = true;
@@ -33,6 +32,8 @@ stdenv.mkDerivation {
   '';
 
   passthru = passthru // {
-    inherit nodejs yarnPath plugins;
+    inherit nodejs yarn-js plugins;
+  } // lib.optionalAttrs (lib.attrsets.isDerivation yarn-js) {
+    isPatchedForGlobalCache = yarn-js.isPatchedForGlobalCache or false;
   };
 }
