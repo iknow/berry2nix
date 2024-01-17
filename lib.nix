@@ -180,6 +180,9 @@ let
 
   /* Create the yarn global folder containing the packages in the cache
 
+     An index folder is also created which the pnpm linker tries to create if
+     it does not already exist.
+
      This accepts a fetchWithYarn option to switch to using yarn for fetching
      instead of nix (builtins.fetchurl and builtins.fetchGit).
   */
@@ -319,6 +322,11 @@ let
       ${lib.concatMapStrings (p: ''
         ln -s "${p}" "$out/cache/${p.cacheFilename}"
       '') fetchedPackages}
+
+      mkdir $out/index
+      for i in $(seq 0 255); do
+        mkdir $out/index/$(printf "%02x" "$i")
+      done
     '';
 
   /* Create a node_modules directory from a yarn install
