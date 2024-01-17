@@ -1,8 +1,8 @@
 diff --git a/packages/yarnpkg-core/sources/Configuration.ts b/packages/yarnpkg-core/sources/Configuration.ts
-index ede7f43..7a328df 100644
+index 414112bd..294d939a 100644
 --- a/packages/yarnpkg-core/sources/Configuration.ts
 +++ b/packages/yarnpkg-core/sources/Configuration.ts
-@@ -1505,6 +1505,19 @@ export class Configuration {
+@@ -1785,6 +1785,19 @@ export class Configuration {
      return {os, cpu, libc};
    }
  
@@ -19,14 +19,14 @@ index ede7f43..7a328df 100644
 +    };
 +  }
 +
-   async refreshPackageExtensions() {
-     this.packageExtensions = new Map();
-     const packageExtensions = this.packageExtensions;
+   private packageExtensions: PackageExtensions | null = null;
+ 
+   /**
 diff --git a/packages/yarnpkg-core/sources/Project.ts b/packages/yarnpkg-core/sources/Project.ts
-index 1cbfd6e..5623f4d 100644
+index a2201624..746fd463 100644
 --- a/packages/yarnpkg-core/sources/Project.ts
 +++ b/packages/yarnpkg-core/sources/Project.ts
-@@ -732,6 +732,7 @@ export class Project {
+@@ -820,6 +820,7 @@ export class Project {
      // the number of async tasks being listed in the report, although it's strange this doesn't occur on other systems.
      const currentArchitecture = nodeUtils.getArchitectureSet();
      const supportedArchitectures = this.configuration.getSupportedArchitectures();
@@ -34,7 +34,7 @@ index 1cbfd6e..5623f4d 100644
  
      await opts.report.startProgressPromise(Report.progressViaTitle(), async progress => {
        const startPackageResolution = async (locator: Locator) => {
-@@ -918,6 +919,10 @@ export class Project {
+@@ -1047,6 +1048,10 @@ export class Project {
          }
  
          disabledLocators.add(pkg.locatorHash);
@@ -46,10 +46,10 @@ index 1cbfd6e..5623f4d 100644
  
        conditionalLocators.add(pkg.locatorHash);
 diff --git a/packages/yarnpkg-core/sources/nodeUtils.ts b/packages/yarnpkg-core/sources/nodeUtils.ts
-index de34ca6..3513612 100644
+index cdd863a0..4c6dc91e 100644
 --- a/packages/yarnpkg-core/sources/nodeUtils.ts
 +++ b/packages/yarnpkg-core/sources/nodeUtils.ts
-@@ -65,6 +65,12 @@ export type ArchitectureSet = {
+@@ -78,6 +78,12 @@ export type ArchitectureSet = {
    libc: Array<string> | null;
  };
  
@@ -63,10 +63,10 @@ index de34ca6..3513612 100644
  let architectureSet: ArchitectureSet | undefined;
  
 diff --git a/packages/yarnpkg-core/sources/structUtils.ts b/packages/yarnpkg-core/sources/structUtils.ts
-index 6f8cbfa..1f1e2ba 100644
+index b47708eb..8d7cfdb2 100644
 --- a/packages/yarnpkg-core/sources/structUtils.ts
 +++ b/packages/yarnpkg-core/sources/structUtils.ts
-@@ -823,3 +823,13 @@ export function isPackageCompatible(pkg: Package, architectures: nodeUtils.Archi
+@@ -879,3 +879,13 @@ export function isPackageCompatible(pkg: Package, architectures: nodeUtils.Archi
      return supported ? supported.includes(value) : true;
    });
  }
@@ -76,7 +76,7 @@ index 6f8cbfa..1f1e2ba 100644
 +    return true;
 +
 +  return conditionParser(pkg.conditions, specifier => {
-+    const [, name] = specifier.match(conditionRegex)!;
++    const [, name] = specifier.match(CONDITION_REGEX)!;
 +    return architecturePurity[name as keyof typeof architecturePurity];
 +  });
 +}
