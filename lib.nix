@@ -229,6 +229,8 @@ let
         outputHash = opts.sha512;
         outputHashAlgo = "sha512";
 
+        nativeBuildInputs = [ pkgs.cacert ];
+
         buildInputs = [ project.yarn project.yarn.nodejs ];
         passthru.cacheFilename = opts.name;
 
