@@ -17,14 +17,13 @@ import { InstallOptions } from '@yarnpkg/core/lib/Project';
 import {
   CwdFS,
   PortablePath,
-  ZipCompression,
   npath,
   ppath,
   xfs,
 } from '@yarnpkg/fslib';
+import { ZipCompression } from '@yarnpkg/libzip';
 import { gitUtils } from '@yarnpkg/plugin-git';
-import { npmConfigUtils } from '@yarnpkg/plugin-npm';
-import type { NpmSemverFetcher } from '@yarnpkg/plugin-npm/lib/NpmSemverFetcher';
+import { npmConfigUtils, NpmSemverFetcher } from '@yarnpkg/plugin-npm';
 import { patchUtils } from '@yarnpkg/plugin-patch';
 import { Option } from 'clipanion';
 
@@ -143,12 +142,6 @@ interface PackageSpec {
 }
 
 async function collectPackages(project: Project, cache: Cache) {
-  // in yarn 4, this should be importable directly from @yarnpkg/plugin-npm
-  // instead of having to dig it out of the configuration
-  const npmFetcher = project.configuration.plugins.get('@yarnpkg/plugin-npm')?.fetchers?.find(f => {
-    return 'getLocatorUrl' in f && typeof f.getLocatorUrl === 'function';
-  })! as typeof NpmSemverFetcher;
-
   const packages: PackageSpec[] = [];
   for (const pkg of project.storedPackages.values()) {
     const { protocol } = structUtils.parseRange(pkg.reference);
@@ -177,7 +170,7 @@ async function collectPackages(project: Project, cache: Cache) {
 
     if (protocol === 'npm:') {
       const registry = npmConfigUtils.getScopeRegistry(pkg.scope, { configuration: project.configuration });
-      const packageUrl = `${registry}${npmFetcher.getLocatorUrl(pkg)}`;
+      const packageUrl = `${registry}${NpmSemverFetcher.getLocatorUrl(pkg)}`;
       packages.push({
         name,
         convert,
