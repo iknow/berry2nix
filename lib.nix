@@ -203,6 +203,7 @@ let
         outputHashAlgo = "sha512";
 
         buildInputs = [ project.yarn project.yarn.nodejs pkgs.git ];
+        nativeBuildInputs = [ pkgs.cacert ];
         passthru.cacheFilename = opts.name;
 
         locatorJson = builtins.toJSON opts.locator;
@@ -211,8 +212,6 @@ let
         ${setupProject project}
         export YARN_ENABLE_NETWORK=true
         export YARN_GLOBAL_FOLDER=tmp
-        export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-        export GIT_SSL_CAINFO="$SSL_CERT_FILE"
 
         mkdir -p tmp/cache
 
@@ -228,6 +227,8 @@ let
       fetchRemotePackageWithNix = opts: pkgs.runCommand opts.name {
         outputHash = opts.sha512;
         outputHashAlgo = "sha512";
+
+        nativeBuildInputs = [ pkgs.cacert ];
 
         buildInputs = [ project.yarn project.yarn.nodejs ];
         passthru.cacheFilename = opts.name;
