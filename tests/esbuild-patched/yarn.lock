@@ -2,8 +2,8 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 6
-  cacheKey: 8
+  version: 8
+  cacheKey: 10
 
 "@esbuild/android-arm64@npm:0.17.19":
   version: 0.17.19
@@ -29,7 +29,7 @@ __metadata:
 "@esbuild/darwin-arm64@npm:0.17.19":
   version: 0.17.19
   resolution: "@esbuild/darwin-arm64@npm:0.17.19"
-  checksum: 798c966052afed385c963cc8d7d071713ffc024a6a489bac0bb84eacd280102f68996109548bd79a6f4081e9283cc34899466ed32aa0cf81ddbda94fb6ffc592
+  checksum: 10/9000e615fed53ffbc176e3ad29d281ff947a704f57cd2fb8f1631918a314c83571b6380f0552654a8c1bea6d2c752eaaa6d507b3658dc1b3bf789375e608db93
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
@@ -37,7 +37,7 @@ __metadata:
 "@esbuild/darwin-x64@npm:0.17.19":
   version: 0.17.19
   resolution: "@esbuild/darwin-x64@npm:0.17.19"
-  checksum: c8bb627ae859976c091e71c83eb3e3af13d0dc0fe210c2b16aa5ee244c3fe8924fc89a4c671ce6dcb5b9ad6e2138040d727df9461db48c7b20afe84e448b7b16
+  checksum: 10/fbfda616f63264baa80d451926d991f01e07000561498d914b2613822cd8298a266fadc61566671e74f90fa3b9bd3705bbc8ee903e5c5800d05f2d4bfa350e53
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
@@ -59,7 +59,7 @@ __metadata:
 "@esbuild/linux-arm64@npm:0.17.19":
   version: 0.17.19
   resolution: "@esbuild/linux-arm64@npm:0.17.19"
-  checksum: bdf039aa0410144f16f208fe0267efac5c7e7945862a3ffaa775c67dcd43d99df349ab6c4afb86d6bb76719cfd3ecb86693195e6cb38969e8d365752d8d6a586
+  checksum: 10/87bf2e861e6d02745a9733615d1f07436b375f1260f45719965181e81b83f21c292d12cb4b5f1caf08c42b0397d0080d55914c1f7f6d774fefe5ebd8236c3873
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
@@ -116,7 +116,7 @@ __metadata:
 "@esbuild/linux-x64@npm:0.17.19":
   version: 0.17.19
   resolution: "@esbuild/linux-x64@npm:0.17.19"
-  checksum: 03ff211ae04a0e225173f23b3cdbb068148d45ed4118ceef084c34958a2e475c6fdbff799e3ae4651a1941ae5f14cdd2ac6222cd44464018c2dad1a21dc38ef5
+  checksum: 10/17dcadb8604ad43ab56decd502a3cc0ad9fb97cd34d92ccdd0db890fe68fa36cab829db0a0b68bc2641af1a35439f1cddcfaaa53b4202389280c15279ca24461
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
@@ -167,28 +167,28 @@ __metadata:
   version: 0.17.19
   resolution: "esbuild@npm:0.17.19"
   dependencies:
-    "@esbuild/android-arm": 0.17.19
-    "@esbuild/android-arm64": 0.17.19
-    "@esbuild/android-x64": 0.17.19
-    "@esbuild/darwin-arm64": 0.17.19
-    "@esbuild/darwin-x64": 0.17.19
-    "@esbuild/freebsd-arm64": 0.17.19
-    "@esbuild/freebsd-x64": 0.17.19
-    "@esbuild/linux-arm": 0.17.19
-    "@esbuild/linux-arm64": 0.17.19
-    "@esbuild/linux-ia32": 0.17.19
-    "@esbuild/linux-loong64": 0.17.19
-    "@esbuild/linux-mips64el": 0.17.19
-    "@esbuild/linux-ppc64": 0.17.19
-    "@esbuild/linux-riscv64": 0.17.19
-    "@esbuild/linux-s390x": 0.17.19
-    "@esbuild/linux-x64": 0.17.19
-    "@esbuild/netbsd-x64": 0.17.19
-    "@esbuild/openbsd-x64": 0.17.19
-    "@esbuild/sunos-x64": 0.17.19
-    "@esbuild/win32-arm64": 0.17.19
-    "@esbuild/win32-ia32": 0.17.19
-    "@esbuild/win32-x64": 0.17.19
+    "@esbuild/android-arm": "npm:0.17.19"
+    "@esbuild/android-arm64": "npm:0.17.19"
+    "@esbuild/android-x64": "npm:0.17.19"
+    "@esbuild/darwin-arm64": "npm:0.17.19"
+    "@esbuild/darwin-x64": "npm:0.17.19"
+    "@esbuild/freebsd-arm64": "npm:0.17.19"
+    "@esbuild/freebsd-x64": "npm:0.17.19"
+    "@esbuild/linux-arm": "npm:0.17.19"
+    "@esbuild/linux-arm64": "npm:0.17.19"
+    "@esbuild/linux-ia32": "npm:0.17.19"
+    "@esbuild/linux-loong64": "npm:0.17.19"
+    "@esbuild/linux-mips64el": "npm:0.17.19"
+    "@esbuild/linux-ppc64": "npm:0.17.19"
+    "@esbuild/linux-riscv64": "npm:0.17.19"
+    "@esbuild/linux-s390x": "npm:0.17.19"
+    "@esbuild/linux-x64": "npm:0.17.19"
+    "@esbuild/netbsd-x64": "npm:0.17.19"
+    "@esbuild/openbsd-x64": "npm:0.17.19"
+    "@esbuild/sunos-x64": "npm:0.17.19"
+    "@esbuild/win32-arm64": "npm:0.17.19"
+    "@esbuild/win32-ia32": "npm:0.17.19"
+    "@esbuild/win32-x64": "npm:0.17.19"
   dependenciesMeta:
     "@esbuild/android-arm":
       optional: true
@@ -236,7 +236,7 @@ __metadata:
       optional: true
   bin:
     esbuild: bin/esbuild
-  checksum: ac11b1a5a6008e4e37ccffbd6c2c054746fc58d0ed4a2f9ee643bd030cfcea9a33a235087bc777def8420f2eaafb3486e76adb7bdb7241a9143b43a69a10afd8
+  checksum: 10/86ada7cad6d37a3445858fee31ca39fc6c0436c7c00b2e07b9ce308235be67f36aefe0dda25da9ab08653fde496d1e759d6ad891ce9479f9e1fb4964c8f2a0fa
   languageName: node
   linkType: hard
 
@@ -244,6 +244,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "esbuild@workspace:."
   dependencies:
-    esbuild: ^0.17.19
+    esbuild: "npm:^0.17.19"
   languageName: unknown
   linkType: soft
