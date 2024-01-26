@@ -118,9 +118,14 @@ let
     workspaces ? getWorkspaces src,
     ...
   }: {
-    inherit src packageJSON yarnLock yarnRcYml yarnPlugins yarnPath workspaces;
+    inherit src packageJSON yarnLock yarnPlugins yarnPath workspaces;
 
     yarn = assert lib.assertMsg (yarn != null) "yarnPath could not be autodetected, please specify yarn or yarnPath"; yarn;
+
+    yarnRcYml = builtins.path {
+      path = yarnRcYml;
+      name = "yarnrc.yml";
+    };
   };
 
   yarnPlugin = ./bundles + "/@yarnpkg/plugin-berry2nix.js";
