@@ -217,6 +217,7 @@ let
         ${setupProject project}
         export YARN_ENABLE_NETWORK=true
         export YARN_GLOBAL_FOLDER=tmp
+        export YARN_ENABLE_INLINE_BUILDS=true
 
         mkdir -p tmp/cache
 
@@ -260,6 +261,7 @@ let
           # dependencies may need to be installed so we temporarily allow
           # network access
           export YARN_ENABLE_NETWORK=true
+          export YARN_ENABLE_INLINE_BUILDS=true
 
           yarn prepareDependency \
             "$fetched" \
