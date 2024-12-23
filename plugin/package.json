@@ -8,18 +8,18 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@tsconfig/node-lts": "^18.12.2",
-    "@tsconfig/strictest": "^2.0.1",
-    "@yarnpkg/builder": "^4.0.0",
-    "@yarnpkg/cli": "^4.1.1",
-    "@yarnpkg/core": "^4.0.3",
-    "@yarnpkg/fslib": "^3.0.2",
-    "@yarnpkg/libzip": "^3.0.1",
-    "@yarnpkg/plugin-git": "^3.0.0",
+    "@tsconfig/node-lts": "^20.0.0",
+    "@tsconfig/strictest": "^2.0.5",
+    "@yarnpkg/builder": "^4.2.0",
+    "@yarnpkg/cli": "^4.5.3",
+    "@yarnpkg/core": "^4.1.6",
+    "@yarnpkg/fslib": "^3.1.1",
+    "@yarnpkg/libzip": "^3.1.0",
+    "@yarnpkg/plugin-git": "^3.1.0",
     "@yarnpkg/plugin-npm": "^3.0.1",
     "@yarnpkg/plugin-pack": "^4.0.0",
     "@yarnpkg/plugin-patch": "^4.0.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.7.2"
   },
-  "packageManager": "yarn@4.1.1"
+  "packageManager": "yarn@4.5.3"
 }
