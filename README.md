@@ -1,6 +1,6 @@
 # berry2nix
 
-This is yet another Yarn 3 (berry) nix library. You might also be interested in
+This is yet another Yarn 4 (berry) nix library. You might also be interested in
 the other following projects which have different pros and cons:
 
  * [yarnpnp2nix](https://github.com/madjam002/yarnpnp2nix)
@@ -25,7 +25,7 @@ untested or just don't work:
  * `pnp` linker
  * corepack
 
-This has only been tested with yarn 3.5.1, older versions might not work.
+This has only been tested with yarn 4.5.3, older versions might not work.
 
 ## Usage
 
@@ -150,12 +150,9 @@ berry2nix.mkBerryWorkspace {
 }
 ```
 
-The patched version avoids an additional copy of zips when installing packages
-in `mkBerryModules` and `mkBerryWorkspace`.
-
 ### Optional Conditional Dependencies
 
-The patched version also works around the problem of optional conditional
+The patched version works around the problem of optional conditional
 dependencies, but it *must* be used when doing the `yarn install` so it's
 recommended to use it as part of `nix-shell` instead of upstream yarn.
 
