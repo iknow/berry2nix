@@ -32,8 +32,4 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     cp packages/yarnpkg-cli/bundles/yarn.js $out
   '';
-
-  passthru = {
-    isPatchedForGlobalCache = applyBuiltinPatches;
-  };
 })

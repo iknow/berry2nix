@@ -358,19 +358,6 @@ let
     pkgs.runCommand "${name}-node-modules" {
       buildInputs = [ project.yarn ];
 
-      # By default, when installing, yarn will copy zips from the global cache
-      # into the project cache (.yarn/cache) and then do the linking (untar
-      # into node_modules) from there.
-      #
-      # The intermediate copy can be skipped by setting `enableGlobalCache` BUT
-      # yarn does not support zips that are symlinks (which is how we build the
-      # global cache). This works with the global cache off because the zips
-      # that yarn copies into the project cache are not symlinks.
-      #
-      # For this to work, we have to patch yarn to support symlinked zips and
-      # only use the global cache if it is.
-      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache or false);
-
       passthru = {
         inherit cache;
         inherit (project) yarn;
@@ -378,6 +365,11 @@ let
     } ''
       ${setupProject project}
       export YARN_NODE_LINKER="node-modules"
+      # By default, when installing, yarn will copy zips from the global cache
+      # into the project cache (.yarn/cache) and then do the linking (untar
+      # into node_modules) from there. The intermediate copy can be skipped by
+      # setting `enableGlobalCache`.
+      export YARN_ENABLE_GLOBAL_CACHE="true"
       export YARN_GLOBAL_FOLDER="${cache}"
 
       # YN0013 is "will fetch"
@@ -416,11 +408,10 @@ let
 
       buildInputs = [ project.yarn ];
 
-      YARN_ENABLE_GLOBAL_CACHE = builtins.toJSON (project.yarn.isPatchedForGlobalCache or false);
-
       buildPhase = ''
         ${yarnEnv}
         export YARN_NODE_LINKER="node-modules"
+        export YARN_ENABLE_GLOBAL_CACHE="true"
         export YARN_GLOBAL_FOLDER="${cache}"
 
         ${buildPhase}

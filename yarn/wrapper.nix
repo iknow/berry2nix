@@ -33,7 +33,5 @@ stdenv.mkDerivation {
 
   passthru = passthru // {
     inherit nodejs yarn-js plugins;
-  } // lib.optionalAttrs (lib.attrsets.isDerivation yarn-js) {
-    isPatchedForGlobalCache = yarn-js.isPatchedForGlobalCache or false;
   };
 }
