@@ -113,12 +113,13 @@ let
     yarnLock ? src + "/yarn.lock",
     yarnRcYml ? src + "/.yarnrc.yml",
     yarnPlugins ? src + "/.yarn/plugins",
+    yarnPatches ? src + "/.yarn/patches",
     yarnPath ? getYarnPath src,
     yarn ? lib.mapNullable (yarn-js: wrapYarnWith { inherit yarn-js; }) yarnPath,
     workspaces ? getWorkspaces src,
     ...
   }: {
-    inherit src packageJSON yarnLock yarnPlugins yarnPath workspaces;
+    inherit src packageJSON yarnLock yarnPlugins yarnPatches yarnPath workspaces;
 
     yarn = assert lib.assertMsg (yarn != null) "yarnPath could not be autodetected, please specify yarn or yarnPath"; yarn;
 
@@ -153,6 +154,10 @@ let
       copyPlugins = lib.optionalString (builtins.pathExists project.yarnPlugins) ''
         cp --no-preserve=mode -r ${project.yarnPlugins} .yarn/plugins
       '';
+
+      copyPatches = lib.optionalString (builtins.pathExists project.yarnPatches) ''
+        cp --no-preserve=mode -r ${project.yarnPatches} .yarn/patches
+      '';
     in
     ''
       ${yarnEnv}
@@ -166,6 +171,7 @@ let
 
       mkdir .yarn
       ${copyPlugins}
+      ${copyPatches}
 
       # having a yarnPath sometimes interferes with building git dependencies
       # even if YARN_IGNORE_PATH is set
