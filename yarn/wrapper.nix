@@ -2,7 +2,7 @@
 , lib
 , makeWrapper
 , nodejs
-, yarn-js ? ../.yarn/releases/yarn-3.5.1.cjs
+, yarn-js ? ../.yarn/releases/yarn-4.12.0.cjs
 , plugins ? []
 , passthru ? {}
 }:
