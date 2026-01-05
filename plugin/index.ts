@@ -5,6 +5,7 @@ import {
   Cache,
   Configuration,
   ConfigurationValueMap,
+  Hooks,
   Locator,
   Plugin,
   Project,
@@ -13,7 +14,6 @@ import {
   structUtils,
   tgzUtils,
 } from '@yarnpkg/core';
-import { InstallOptions } from '@yarnpkg/core/lib/Project';
 import {
   CwdFS,
   PortablePath,
@@ -364,10 +364,10 @@ class FetchLocator extends BaseCommand {
   }
 }
 
-const plugin: Plugin = {
+const plugin: Plugin<Hooks> = {
   commands: [ TgzToZip, MakeBerryNix, FetchLocator, PrepareDependency ],
   hooks: {
-    async afterAllInstalled(project: Project, { cache }: InstallOptions) {
+    async afterAllInstalled(project, { cache }) {
       if (process.env['SKIP_BERRY_NIX'] !== undefined) {
         return;
       }
