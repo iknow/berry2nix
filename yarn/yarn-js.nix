@@ -8,7 +8,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "yarn.js";
-  version = "4.12.0";
+  version = "4.18.0";
   name = "yarn-${finalAttrs.version}.js";
 
   buildInputs = [ nodejs ];
@@ -17,7 +17,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "yarnpkg";
     repo = "berry";
     rev = "@yarnpkg/cli/${finalAttrs.version}";
-    sha256 = "sha256-HuUqk4g+MaDI7r1cKAwAtQeNrJ6G9T9IdPgybv2W2pU=";
+    sha256 = "sha256-pO89wh17cW9/RGKjo70yiefr+9nlJAQs4ZEdUnzdgQM=";
   };
 
   patches = patches ++ lib.optionals applyBuiltinPatches [

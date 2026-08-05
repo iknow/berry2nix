@@ -25,7 +25,7 @@ untested or just don't work:
  * `pnp` linker
  * corepack
 
-This has only been tested with yarn 4.12.0, older versions might not work.
+This has only been tested with yarn 4.18.0, older versions might not work.
 
 ## Usage
 
